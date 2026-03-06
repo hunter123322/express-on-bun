@@ -1,0 +1,79 @@
+<div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+
+    <% listings.forEach((listing)=> {
+        const primaryCategory = listing.category && listing.category.length ? listing.category[0] : 'tourist-spots';
+        %>
+
+        <a href="/v1/public/place/<%= listing.category[0] %>/<%= listing.slug %>"
+            class="group block bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition duration-300 ring-1 ring-slate-100 opacity-0 animate-card">
+
+            <!-- Image -->
+            <div class="relative h-48 overflow-hidden">
+                <img src="<%= listing.cover_image || '/img/hero.jpg' %>" alt="<%= listing.title %>"
+                    class="w-full h-full object-cover group-hover:scale-105 transition duration-500" loading="lazy" />
+
+                <!-- Rating Badge -->
+                <% if (listing.rating) { %>
+                    <div
+                        class="absolute top-2.5 left-2.5 bg-white/95 backdrop-blur text-slate-900 text-[10px] px-2 py-1 rounded-lg flex items-center gap-1 font-bold shadow-sm">
+                        ★
+                        <%= listing.rating.toFixed(1) %>
+                    </div>
+                    <% } %>
+
+                        <!-- Distance Badge -->
+                        <% if (listing.distance_km) { %>
+                            <div
+                                class="absolute bottom-2.5 left-2.5 bg-black/60 backdrop-blur text-white text-[10px] px-2 py-1 rounded-lg flex items-center gap-1 font-medium">
+                                📍
+                                <%= listing.distance_km.toFixed(1) %> km
+                            </div>
+                            <% } %>
+            </div>
+
+            <!-- Content -->
+            <div class="p-3.5 space-y-2">
+                <h3 class="font-bold text-sm text-gray-800 group-hover:text-blue-600 transition line-clamp-1">
+                    <%= listing.title %>
+                </h3>
+
+                <div class="flex items-center gap-1.5 text-[11px] text-gray-500 font-medium">
+                    📍
+                    <span>
+                        <%= listing.municipality %>
+                    </span>
+                </div>
+
+                <% if (listing.pricing_lowest) { %>
+                    <div class="text-[11px] font-bold text-blue-700 flex items-center gap-1">
+                        <span class="text-slate-400 font-normal">Starts at</span>
+                        ₱<%= listing.pricing_lowest.toLocaleString() %>
+                    </div>
+                    <% } %>
+
+                        <!-- Description (optional) -->
+                        <!-- <div class="text-[11px] text-gray-600">
+            <%= listing.description %>
+        </div> -->
+            </div>
+        </a>
+        <% }) %>
+</div>
+
+<style>
+    .animate-card {
+        animation: slideUp 0.9s ease-out forwards;
+    }
+
+    @keyframes slideUp {
+        0% {
+            transform: translateY(25px);
+            opacity: 0;
+        }
+
+        100% {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+</style>

@@ -1,0 +1,107 @@
+<script defer>
+document.addEventListener("DOMContentLoaded", function () {
+  const elements = document.querySelectorAll(".animate-on-scroll");
+
+  const observer = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add("animate-in");
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.2 });
+
+  elements.forEach(el => observer.observe(el));
+});
+</script>
+
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+<% listings.forEach(function(listing, index) { 
+    const primaryCategory = listing.category && listing.category.length ? listing.category[0] : 'tourist-spots';
+    const animationClass = index % 2 === 0 ? 'from-left' : 'from-right';
+%>
+
+<a href="/v1/public/place/<%= primaryCategory %>/<%= listing.slug %>" 
+   class="animate-on-scroll group relative block bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition duration-300 <%= animationClass %>">
+
+    <!-- Image -->
+    <div class="relative h-64 overflow-hidden">
+        <img src="<%= listing.cover_image || '/img/hero.jpg' %>" 
+             alt="<%= listing.title %>" 
+             class="w-full h-full object-cover group-hover:scale-105 transition duration-700" 
+             loading="lazy" />
+
+        <% if (listing.gradient) { %>
+        <div class="absolute inset-0 bg-gradient-to-r from-black via-black/20 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500"></div>
+        <% } %>
+
+        <!-- Sponsored Badge -->
+        <div class="absolute top-4 left-4 bg-blue-600 text-white text-xs px-3 py-1 rounded-full font-medium tracking-wide">
+            Sponsored
+        </div>
+
+        <!-- Rating Badge -->
+        <% if (listing.rating) { %>
+        <div class="absolute top-4 right-4 bg-white/90 backdrop-blur text-blue-700 text-xs px-3 py-1 rounded-full flex items-center gap-1">
+            ★
+            <%= listing.rating.toFixed(1) %>
+        </div>
+        <% } %>
+
+        <!-- Content -->
+        <div class="absolute bottom-0 left-0 right-0 px-5 pb-5 space-y-2 <%= listing.isBlack ? 'text-black backdrop-blur' : 'text-white' %>">
+            <h3 class="text-lg font-semibold leading-tight line-clamp-2">
+                <%= listing.title %>
+            </h3>
+
+            <div class="flex items-center gap-2 text-sm opacity-90">
+                📍
+                <span><%= listing.municipality %></span>
+            </div>
+
+            <% if (listing.pricing_lowest) { %>
+            <div class="text-sm font-medium">
+                Starts at ₱<%= listing.pricing_lowest.toLocaleString() %>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</a>
+
+<% }) %>
+</div>
+
+<style>
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.from-left,
+.from-right {
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+
+.from-left {
+  transform: translateX(-60px);
+}
+
+.from-right {
+  transform: translateX(60px);
+}
+
+.animate-in {
+  animation: slideIn 1s ease-out forwards;
+}
+
+@keyframes slideIn {
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+</style>

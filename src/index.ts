@@ -1,52 +1,71 @@
-import express from 'express'
-import path from 'path'
-import { fileURLToPath } from 'url'
+import express from "express"
+import cors from "cors"
+import dotenv from "dotenv"
+import type { Request, Response, NextFunction } from "express"
+import { setSecurityHeaders } from "./middlewares/security.headers"
+import { MongoDBConnection } from "./utils/mongodb.connection"
+import publicRouter from "./router/public"
+import path from "path"
+import adminRouter from "./router/admin"
+import cookieParser from "cookie-parser"
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+dotenv.config()
 
 const app = express()
+const mongo = new MongoDBConnection(process.env.MONGO_URI || "mongodb://localhost:27017/Albay-tourist")
 
-// Home route - HTML
-app.get('/', (req, res) => {
-  res.type('html').send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>Express + Bun ${process.versions.bun} on Vercel</title>
-        <link rel="stylesheet" href="/style.css" />
-      </head>
-      <body>
-        <nav>
-          <a href="/">Home</a>
-          <a href="/about">About</a>
-          <a href="/api-data">API Data</a>
-          <a href="/healthz">Health</a>
-        </nav>
-        <h1>Welcome to Express + Bun ${process.versions.bun} on Vercel 🚀</h1>
-        <p>This is a minimal example without a database or forms.</p>
-        <img src="/logo.png" alt="Logo" width="120" />
-      </body>
-    </html>
-  `)
+await mongo.connect().then(() => console.log("Mongodb connected")).catch(err => {
+    console.error("Failed to connect to MongoDB:", err)
+    process.exit(1)
 })
 
-app.get('/about', function (req, res) {
-  res.sendFile(path.join(__dirname, '..', 'components', 'about.htm'))
-})
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
 
-// Example API endpoint - JSON
-app.get('/api-data', (req, res) => {
-  res.json({
-    message: 'Here is some sample API data',
-    items: ['apple', 'banana', 'cherry'],
-  })
-})
+const allowedOrigin = process.env.ORIGIN || "http://localhost:3000"
 
-// Health check
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })
-})
+// Middlewares
+app.use(cors({
+    origin: allowedOrigin,
+    methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true
+}))
+app.use(cookieParser())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(setSecurityHeaders)
 
-export default app
+app.use("/v1/admin",  adminRouter)
+app.use("/v1/public", publicRouter)
+
+app.use(
+    (err: unknown, req: Request, res: Response, next: NextFunction) => {
+        console.error('Global error handler:', err);
+
+        // Check if headers are already sent
+        if (res.headersSent) {
+            return next(err);
+        }
+
+        // Check if the request expects HTML
+        const acceptsHtml = req.accepts('html');
+
+        if (acceptsHtml) {
+            // Render error page for HTML requests
+            res.status(500).render('error', {
+                message: "Internal Server Error",
+                error: process.env.NODE_ENV === 'development' ? err : null
+            });
+        } else {
+            // Send JSON for API requests
+            res.status(500).json({ error: "Internal Server Error" });
+        }
+    }
+);
+
+const PORT = process.env.PORT || 3001
+
+app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`)
+})
